@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concurrent File Server - Web Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .status-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.online {
+            background: #10b981;
+        }
+
+        .status-dot.offline {
+            background: #ef4444;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .upload-section {
+            border: 2px dashed #667eea;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-section:hover {
+            background: #f3f4f6;
+            border-color: #764ba2;
+        }
+
+        .upload-section input[type="file"] {
+            display: none;
+        }
+
+        .upload-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .upload-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .file-item:hover {
+            background: #f3f4f6;
+            transform: translateX(5px);
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-download {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-download:hover {
+            background: #059669;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            min-width: 300px;
+        }
+
+        .notification.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .notification.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .notification.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .refresh-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .refresh-button:hover {
+            background: #2563eb;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .status-bar {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .downloads-section {
+            grid-column: 1 / -1;
+        }
+
+        .download-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .download-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .download-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .download-status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .download-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .download-status.downloading {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Concurrent File Server</h1>
+            <p>Multi-threaded File Transfer System with Web Interface</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Checking server status...</span>
+            </div>
+            <button class="refresh-button" onclick="refreshFiles()">
+                🔄 Refresh Files
+            </button>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2>📤 Upload Files</h2>
+                <div class="upload-section" onclick="document.getElementById('fileInput').click()">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                    <p style="color: #666; margin-bottom: 15px;">Click to select file or drag and drop</p>
+                    <input type="file" id="fileInput" onchange="uploadFile()">
+                    <button class="upload-button" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">
+                        Choose File
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📥 Available Files</h2>
+                <div class="file-list" id="fileList">
+                    <div class="empty-state">
+                        <div class="loading"></div>
+                        <p>Loading files...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card downloads-section">
+                <h2>📊 Download History</h2>
+                <div id="downloadHistory">
+                    <div class="empty-state">
+                        <p>No downloads yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">
+        <div id="notificationMessage"></div>
+    </div>
+
+    <script>
+        let downloadHistory = [];
+
+        // Check server status
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('/api/server-status');
+                const data = await response.json();
+                
+                const statusDot = document.getElementById('statusDot');
+                const statusText = document.getElementById('statusText');
+                
+                if (data.status === 'online') {
+                    statusDot.className = 'status-dot online';
+                    statusText.textContent = `Server Online - ${data.host}:${data.port}`;
+                } else {
+                    statusDot.className = 'status-dot offline';
+                    statusText.textContent = `Server Offline - ${data.host}:${data.port}`;
+                }
+            } catch (error) {
+                console.error('Error checking server status:', error);
+            }
+        }
+
+        // Load files from server
+        async function loadFiles() {
+            try {
+                const response = await fetch('/api/files');
+                const data = await response.json();
+                
+                const fileList = document.getElementById('fileList');
+                
+                if (data.files && data.files.length > 0) {
+                    fileList.innerHTML = data.files.map(file => `
+                        <div class="file-item">
+                            <div class="file-info">
+                                <div class="file-name">📄 ${file.name}</div>
+                                <div class="file-size">${file.size_formatted}</div>
+                            </div>
+                            <div class="file-actions">
+                                <button class="btn btn-download" onclick="downloadFile('${file.name}')">
+                                    Download
+                                </button>
+                                <button class="btn btn-delete" onclick="deleteFile('${file.name}')">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    fileList.innerHTML = `
+                        <div class="empty-state">
+                            <p>No files available</p>
+                            <p style="font-size: 0.9em; margin-top: 10px;">Upload some files to get started!</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading files:', error);
+                showNotification('Failed to load files', 'error');
+            }
+        }
+
+        // Upload file
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                showNotification(`Uploading ${file.name}...`, 'info');
+                
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showNotification(`✓ ${file.name} uploaded successfully`, 'success');
+                    loadFiles();
+                    fileInput.value = '';
+                } else {
+                    showNotification(`✗ Upload failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Upload failed: ' + error.message, 'error');
+            }
+        }
+
+        // Download file
+        async function downloadFile(filename) {
+            try {
+                showNotification(`Downloading ${filename}...`, 'info');
+                
+                const downloadItem = {
+                    filename: filename,
+                    status: 'downloading',
+                    timestamp: new Date().toLocaleTimeString()
+                };
+                downloadHistory.unshift(downloadItem);
+                updateDownloadHistory();
+                
+                const response = await fetch('/api/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ filename: filename })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Trigger browser download
+                    const link = document.createElement('a');
+                    link.href = data.download_url;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    downloadItem.status = 'success';
+                    downloadItem.message = data.message;
+                    downloadItem.size = data.size;
+                    updateDownloadHistory();
+                    
+                    showNotification(`✓ ${filename} downloaded to your PC!`, 'success');
+                } else {
+                    downloadItem.status = 'error';
+                    downloadItem.message = data.message;
+                    updateDownloadHistory();
+                    showNotification(`✗ Download failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Download failed: ' + error.message, 'error');
+            }
+        }
+
+        // Delete file
+        async function deleteFile(filename) {
+            if (!confirm(`Are you sure you want to delete ${filename}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/delete/${filename}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showNotification(`✓ ${filename} deleted successfully`, 'success');
+                    loadFiles();
+                } else {
+                    showNotification(`✗ Delete failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Delete failed: ' + error.message, 'error');
+            }
+        }
+
+        // Update download history
+        function updateDownloadHistory() {
+            const historyDiv = document.getElementById('downloadHistory');
+            
+            if (downloadHistory.length === 0) {
+                historyDiv.innerHTML = `
+                    <div class="empty-state">
+                        <p>No downloads yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            historyDiv.innerHTML = downloadHistory.map(item => `
+                <div class="download-item">
+                    <div class="download-header">
+                        <span><strong>${item.filename}</strong></span>
+                        <span class="download-status ${item.status}">${item.status.toUpperCase()}</span>
+                    </div>
+                    <div style="color: #666; font-size: 0.9em;">
+                        ${item.timestamp}
+                        ${item.size ? ` • ${formatBytes(item.size)}` : ''}
+                        ${item.message ? ` • ${item.message}` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Format bytes
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+            return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const notificationMessage = document.getElementById('notificationMessage');
+            
+            notification.className = `notification ${type} show`;
+            notificationMessage.textContent = message;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Refresh files
+        function refreshFiles() {
+            loadFiles();
+            checkServerStatus();
+            showNotification('Files refreshed', 'info');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkServerStatus();
+            loadFiles();
+            
+            // Refresh status every 5 seconds
+            setInterval(checkServerStatus, 5000);
+        });
+
+        // Drag and drop support
+        const uploadSection = document.querySelector('.upload-section');
+        
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.style.background = '#f3f4f6';
+        });
+        
+        uploadSection.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadSection.style.background = '';
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.style.background = '';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('fileInput').files = files;
+                uploadFile();
+            }
+        });
+    </script>
+</body>
+</html>

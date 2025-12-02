@@ -1,0 +1,88 @@
+╔══════════════════════════════════════════════════════════╗
+║     CONCURRENT FILE SERVER - QUICK START GUIDE           ║
+╚══════════════════════════════════════════════════════════╝
+
+🚀 TO START:
+============
+
+WINDOWS:
+--------
+1. Double-click: start_all.bat
+2. Browser opens automatically to: http://localhost:5000
+3. Start uploading and downloading files!
+
+OR manually:
+- Terminal 1: start_server.bat (or: python file_server.py)
+- Terminal 2: start_web.bat (or: python web_interface.py)
+- Browser: http://localhost:5000
+
+
+macOS/LINUX:
+------------
+1. Open Terminal and navigate to project folder
+2. Run: chmod +x *.sh (first time only)
+3. Run: ./start_all.sh
+4. Open browser to: http://localhost:5000
+
+OR manually:
+- Terminal 1: ./start_server.sh (or: python3 file_server.py)
+- Terminal 2: ./start_web.sh (or: python3 web_interface.py)
+- Browser: http://localhost:5000
+
+📖 macOS users: See MAC_SETUP.md for detailed instructions
+
+
+📋 FEATURES:
+============
+✓ Multi-threaded file server (one thread per client)
+✓ Upload files via drag-drop or browse
+✓ Download files to your PC's Downloads folder
+✓ Delete files from server
+✓ Real-time server status monitoring
+✓ Concurrent downloads support
+
+
+⚙️ CONFIGURATION:
+==================
+Edit config.py to change:
+- SERVER_PORT (default: 9999)
+- WEB_PORT (default: 5000)
+- BUFFER_SIZE (default: 1000 bytes)
+- SLEEP_TIME (default: 200ms)
+
+
+📁 FILE LOCATIONS:
+==================
+- Upload files → saved to: server_files/
+- Download files → go to: Your PC's Downloads folder
+- Server runs on: localhost:9999
+- Web interface: http://localhost:5000
+
+
+📖 FULL DOCUMENTATION:
+======================
+- README.md - Complete documentation (all platforms)
+- MAC_SETUP.md - macOS specific instructions
+
+
+🎯 REQUIREMENTS:
+================
+
+WINDOWS:
+- Python 3.7+
+- Install: pip install -r requirements.txt
+
+macOS/LINUX:
+- Python 3.7+
+- Install: pip3 install -r requirements.txt
+
+Dependencies (auto-installed):
+- Flask 3.0.0
+- Flask-CORS 4.0.0
+
+
+✅ VERIFIED WORKING!
+====================
+Tested on Windows 10/11 and macOS 10.15+
+All features operational on both platforms.
+

@@ -1,0 +1,29 @@
+Welcome to the Concurrent File Server!
+======================================
+
+This is a sample text file to demonstrate the file transfer system.
+
+Features:
+---------
+✓ Multi-threaded server architecture
+✓ Concurrent client handling
+✓ Connection-oriented TCP sockets
+✓ 1000 bytes per flush operation
+✓ 200ms sleep between transfers
+✓ Interactive web interface
+
+The server spawns a new thread for each client connection,
+allowing multiple clients to download files simultaneously
+without blocking each other.
+
+Each thread is responsible for:
+1. Receiving the filename from the client
+2. Opening and reading the requested file
+3. Transferring the file in 1000-byte chunks
+4. Sleeping for 200ms between each chunk
+5. Closing the connection when complete
+
+This approach ensures efficient resource utilization and
+responsive service for all connected clients.
+
+Thank you for using the Concurrent File Server!
